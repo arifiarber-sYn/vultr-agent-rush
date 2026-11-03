@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
@@ -128,12 +129,27 @@ def chat(
     return text
 
 
+def provider_label(base_url: str) -> str:
+    """Honest name for the configured endpoint, derived from its host.
+
+    The env var names come from Vultr Serverless Inference, but any
+    OpenAI-compatible endpoint can be wired in. We never claim "vultr" for a
+    host that is not Vultr.
+    """
+    host = (urllib.parse.urlsplit(base_url).hostname or "").lower()
+    if not host:
+        return "openai-compatible"
+    if host.endswith("vultrinference.com"):
+        return "vultr-serverless-inference"
+    return f"openai-compatible:{host}"
+
+
 def inference_status(env: dict[str, str] | None = None) -> dict:
     """Secret-free description of the inference wiring (safe for /health)."""
     config = InferenceConfig.from_env(env)
     return {
         "configured": config.configured,
-        "mode": "vultr-serverless-inference" if config.configured else "local-fallback",
+        "mode": provider_label(config.base_url) if config.configured else "local-fallback",
         "model": config.model or None,
         "endpoint": config.endpoint if config.base_url else None,
         "missing_env": config.missing,

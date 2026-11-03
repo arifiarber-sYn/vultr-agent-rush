@@ -17,7 +17,7 @@ import json
 import re
 from dataclasses import dataclass, field
 
-from .llm import InferenceConfig, InferenceError, chat
+from .llm import InferenceConfig, InferenceError, chat, provider_label
 
 STEP_KINDS = ("inspect", "execute", "verify")
 MAX_TASK_CHARS = 4000
@@ -56,7 +56,7 @@ class Plan:
 
     @property
     def uses_remote_model(self) -> bool:
-        return self.source == "vultr"
+        return self.source != "local-fallback"
 
     def as_dict(self) -> dict:
         return {
@@ -177,4 +177,10 @@ def plan_task(task: str, *, env: dict[str, str] | None = None, opener=None,
     except (ValueError, json.JSONDecodeError) as exc:
         return fallback_plan(task, f"remote model returned an unusable plan: {exc}")
 
-    return Plan(task=task, steps=steps, source="vultr", model=config.model)
+    label = provider_label(config.base_url)
+    return Plan(
+        task=task,
+        steps=steps,
+        source="vultr" if label == "vultr-serverless-inference" else label,
+        model=config.model,
+    )
