@@ -150,6 +150,16 @@ VULTR_INFERENCE_API_KEY=...   # never commit this
 VULTR_INFERENCE_MODEL=...     # a chat model served on your account
 ```
 
+**Current deployment (honest note).** The public demo runs on a Vultr VM
+(`vc2-1c-1gb`, Ubuntu 24.04) with the sandbox executed through the host Docker
+daemon. Vultr Serverless Inference accepted the account key on `/v1/models` but
+rejected `/v1/chat/completions` with `401 Invalid API key` (no inference key is
+provisioned on that account), so the planner is wired to another
+OpenAI-compatible endpoint instead: `https://api.meta.ai/v1`, model
+`muse-wonder-1.0`. `/health` reports the real host, never a claim of "vultr" for
+a host that is not Vultr — set the three variables above to a Vultr inference
+key and the same code uses Vultr with no other change.
+
 Then the planner sends a system prompt that demands JSON only, validates the
 result, and forces the final step to be `verify`. If any variable is missing,
 the request fails, the model answers prose instead of JSON, or the model returns
