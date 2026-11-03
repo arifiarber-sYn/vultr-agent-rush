@@ -10,6 +10,11 @@ what ran and what contained it.
 resource-capped container, and the API hands back the containment flags next to
 the exit code so a judge can check both.
 
+**Demo video (74 s, no audio):** [agent-rush-demo.mp4](docs/assets/agent-rush-demo.mp4) — a
+successful run, then a network escape and a filesystem write both refused inside the
+container, each with the real `Errno` and the containment flags returned next to it.
+Direct link: <https://raw.githubusercontent.com/arifiarber-sYn/vultr-agent-rush/main/docs/assets/agent-rush-demo.mp4>
+
 ```
 POST /plan  {"task": "read data.csv and report the row count"}
    -> {"source": "local-fallback", "steps": [ ... 3 steps ... ]}
