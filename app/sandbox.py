@@ -13,6 +13,7 @@ TIMEOUT_S = 20
 MEMORY = "256m"
 CPUS = "0.5"
 PIDS = "64"
+SANDBOX_USER = "65534:65534"
 
 FORBIDDEN_FLAGS = ("--privileged",)
 
@@ -31,11 +32,40 @@ def build_command(code: str, job_id: str | None = None) -> list[str]:
         "--security-opt", "no-new-privileges",
         "--read-only",
         "--tmpfs", "/work:rw,size=16m,noexec,nosuid",
-        "--user", "65534:65534",
+        "--user", SANDBOX_USER,
         "--workdir", "/work",
         IMAGE,
         "python", "-I", "-c", code,
     ]
+
+
+def containment_record() -> dict:
+    """The flags we claim, in machine-readable form, for the job record."""
+    return {
+        "network": "none",
+        "memory": MEMORY,
+        "cpus": CPUS,
+        "pids": PIDS,
+        "read_only": True,
+        "cap_drop": "ALL",
+        "no_new_privileges": True,
+        "user": SANDBOX_USER,
+        "timeout_s": TIMEOUT_S,
+        "image": IMAGE,
+    }
+
+
+def _failure(job_id: str | None, *, error: str, exit_code: int | None, stderr: str) -> dict:
+    return {
+        "id": job_id,
+        "ok": False,
+        "exit_code": exit_code,
+        "stdout": "",
+        "stderr": stderr,
+        "error": error,
+        "verified": False,
+        "containment": containment_record(),
+    }
 
 
 def run_in_sandbox(code: str, job_id: str | None = None) -> dict:
@@ -44,16 +74,29 @@ def run_in_sandbox(code: str, job_id: str | None = None) -> dict:
     assert not any(f in cmd for f in FORBIDDEN_FLAGS), "privileged flag must never appear"
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S)
-        return {
-            "ok": p.returncode == 0,
-            "exit_code": p.returncode,
-            "stdout": p.stdout[-8000:],
-            "stderr": p.stderr[-4000:],
-            "containment": {
-                "network": "none", "memory": MEMORY, "cpus": CPUS,
-                "pids": PIDS, "read_only": True, "cap_drop": "ALL",
-            },
-        }
+    except FileNotFoundError:
+        return _failure(
+            job_id,
+            error="sandbox_unavailable: docker CLI not found on PATH",
+            exit_code=None,
+            stderr="the control layer needs a Docker host (see README: Deploy)",
+        )
     except subprocess.TimeoutExpired:
         subprocess.run(["docker", "kill", f"run-{job_id or 'unknown'}"], capture_output=True)
-        return {"ok": False, "exit_code": None, "stdout": "", "stderr": f"timeout after {TIMEOUT_S}s", "containment": {"network": "none"}}
+        return _failure(
+            job_id,
+            error=f"timeout after {TIMEOUT_S}s",
+            exit_code=None,
+            stderr=f"timeout after {TIMEOUT_S}s",
+        )
+
+    return {
+        "id": job_id,
+        "ok": p.returncode == 0,
+        "exit_code": p.returncode,
+        "stdout": p.stdout[-8000:],
+        "stderr": p.stderr[-4000:],
+        "error": None,
+        "verified": p.returncode == 0,
+        "containment": containment_record(),
+    }
