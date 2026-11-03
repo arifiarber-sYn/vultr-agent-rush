@@ -82,7 +82,7 @@ app/main.py          FastAPI control layer: /health /plan /tasks
 app/planner.py       plan -> steps (remote model or explicit local fallback)
 app/llm.py           Vultr Serverless Inference adapter (stdlib, OpenAI-compatible)
 app/sandbox.py       docker command builder + runner (containment flags live here)
-tests/               35 pytest tests, no Docker and no network required
+tests/               39 pytest tests, no Docker and no network required
 scripts/             containment demo
 docs/                architecture and security decisions
 ```
