@@ -24,6 +24,18 @@ POST /tasks {"code": "print(6 * 7)"}
        "containment": {"network": "none", "read_only": true, "cap_drop": "ALL", ...}}
 ```
 
+## Submission checklist
+
+| Expectation | Where it is |
+|---|---|
+| GitHub repository with setup and documentation | this repository: setup below, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), `scripts/deploy-vultr.sh` |
+| Vultr VM backend deployment | `scripts/deploy-vultr.sh` — Cloud Compute, Ubuntu 24.04, Docker, one command |
+| Public demo URL | added at deploy time from the script's output |
+| Recorded demo video | [docs/assets/agent-rush-demo.mp4](docs/assets/agent-rush-demo.mp4) — 74 s, three containment moments |
+| Clear architecture and use-case explanation | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/assets/agent-rush-deck.pdf](docs/assets/agent-rush-deck.pdf) |
+| Isolated sandbox execution (Challenge 1) | `app/sandbox.py`; every response returns the flags it actually enforced |
+| Vultr Serverless Inference (Challenge 1) | `app/llm.py`, `POST /plan`; when unset it reports `local-fallback` instead of pretending |
+
 ## The containment moment
 
 The "containment moment" is the second when hostile or buggy code tries to leave
