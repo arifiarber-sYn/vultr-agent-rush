@@ -51,7 +51,7 @@ assert them there. There is no second code path that could run code "quickly".
 2. `build_command` produces the docker argv (no shell interpolation, no `docker exec`).
 3. `subprocess.run(argv, timeout=20)` starts the container.
 4. Inside: `python -I -c <code>` as uid 65534, cwd `/work` (16 MiB tmpfs,
-   `noexec,nosuid`), root filesystem read-only.
+   `mode=1777,noexec,nosuid`), root filesystem read-only.
 5. Process exits; the job record stores exit code, last 8 KB stdout, last 4 KB
    stderr, `verified` (exit code 0), and the `containment` block.
 6. On `TimeoutExpired`: `docker kill run-<id>`, then a failure record.
@@ -62,7 +62,7 @@ assert them there. There is no second code path that could run code "quickly".
 |---|---|---|---|
 | No network | `--network none` | exfiltration, C2, scanning, package install all die here | `test_network_is_none` |
 | Read-only root | `--read-only` | no tampering with binaries, no persistence | `test_runs_as_non_root_readonly` |
-| Writable scratch only | `--tmpfs /work:rw,size=16m,noexec,nosuid` | bounded, non-executable workspace that dies with the container | command-construction test |
+| Writable scratch only | `--tmpfs /work:rw,size=16m,mode=1777,noexec,nosuid` | bounded, non-executable workspace that dies with the container; mode=1777 so uid 65534 can actually write there | `test_workdir_is_writable_by_sandbox_user` |
 | Drop capabilities | `--cap-drop ALL` | removes mount/chroot/raw-socket paths | `test_runs_as_non_root_readonly` |
 | No privilege escalation | `--security-opt no-new-privileges` | setuid binaries cannot gain rights | command-construction test |
 | Non-root | `--user 65534:65534` | no ownership of host-mapped files, no uid-0 semantics | `test_runs_as_non_root_readonly` |

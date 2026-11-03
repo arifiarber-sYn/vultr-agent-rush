@@ -77,7 +77,7 @@ app/main.py          FastAPI control layer: /health /plan /tasks
 app/planner.py       plan -> steps (remote model or explicit local fallback)
 app/llm.py           Vultr Serverless Inference adapter (stdlib, OpenAI-compatible)
 app/sandbox.py       docker command builder + runner (containment flags live here)
-tests/               34 pytest tests, no Docker and no network required
+tests/               35 pytest tests, no Docker and no network required
 scripts/             containment demo
 docs/                architecture and security decisions
 ```
@@ -101,7 +101,7 @@ Without Docker the control layer still starts; `POST /tasks` returns
 
 ```bash
 python -m pytest -q
-# 34 passed
+# 35 passed
 ```
 
 The suite is intentionally offline: the inference adapter is tested through an

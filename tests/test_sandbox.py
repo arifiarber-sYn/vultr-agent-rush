@@ -56,6 +56,13 @@ def test_containment_record_matches_command() -> None:
     assert record["read_only"] is True and record["no_new_privileges"] is True
 
 
+def test_workdir_is_writable_by_sandbox_user() -> None:
+    cmd = build_command("print(1)")
+    tmpfs = cmd[cmd.index("--tmpfs") + 1]
+    assert "mode=1777" in tmpfs, "tmpfs must be world-writable inside the container"
+    assert "noexec" in tmpfs and "size=16m" in tmpfs
+
+
 def test_docker_missing_is_a_structured_failure(monkeypatch) -> None:
     def missing(*args, **kwargs):
         raise FileNotFoundError("docker")

@@ -31,7 +31,7 @@ def build_command(code: str, job_id: str | None = None) -> list[str]:
         "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges",
         "--read-only",
-        "--tmpfs", "/work:rw,size=16m,noexec,nosuid",
+        "--tmpfs", "/work:rw,size=16m,mode=1777,noexec,nosuid",
         "--user", SANDBOX_USER,
         "--workdir", "/work",
         IMAGE,
