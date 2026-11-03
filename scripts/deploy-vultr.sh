@@ -57,7 +57,13 @@ runcmd:
   - systemctl enable --now docker
   - git clone https://github.com/arifiarber-sYn/vultr-agent-rush.git /opt/rush
   - cd /opt/rush && docker build -t agent-rush:latest .
-  - docker run -d --name rush --restart unless-stopped -p 8000:8000 --env-file /opt/rush/.env agent-rush:latest
+  - cp -n /opt/rush/.env.example /opt/rush/.env || true
+  - >-
+    docker run -d --name rush --restart unless-stopped -p 8000:8000
+    --security-opt label=disable
+    --group-add "$(getent group docker | cut -d: -f3)"
+    -v /var/run/docker.sock:/var/run/docker.sock
+    --env-file /opt/rush/.env agent-rush:latest
   - sleep 5 && curl -fsS http://127.0.0.1:8000/health || true
 CI
 )

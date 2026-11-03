@@ -171,10 +171,33 @@ Open port 8000 only for the demo window (`ufw allow 8000/tcp`), put it behind
 a TLS proxy if it will stay up, and pre-pull the sandbox image
 (`docker pull python:3.12-slim`) so the first request is fast.
 
-**API-only container.** `docker build -t agent-rush .` + `docker run -p 8000:8000`
-serves `/health` and `/plan` perfectly, but that image has no Docker CLI, so
-`/tasks` answers `sandbox_unavailable`. Mounting the host socket into a container
-would defeat the blast-radius story — run the dispatcher on the host instead.
+**Container deploy (verified against this image).** The image ships the Docker
+CLI, so the whole loop runs in one container:
+
+```bash
+docker build -t agent-rush .
+docker run -d --name rush -p 8000:8000 \
+  --security-opt label=disable \
+  --group-add "$(getent group docker | cut -d: -f3)" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --env-file .env agent-rush
+```
+
+`--group-add` lets the non-root `runner` user reach the daemon socket.
+`--security-opt label=disable` is required only on SELinux hosts (Fedora) and is
+a no-op on Ubuntu. Verified response, taken from a live run:
+
+```json
+{"ok": true, "exit_code": 0, "stdout": "42\n", "verified": true,
+ "containment": {"network": "none", "read_only": true, "cap_drop": "ALL",
+                 "user": "65534:65534", "no_new_privileges": true}}
+```
+
+**Why the socket does not widen the blast radius.** The socket belongs to the
+dispatcher, not to the code. Every job is a fresh `docker run` with no socket
+mount, no network, a read-only root, a non-root user and all capabilities
+dropped. The dispatcher is therefore the most valuable target, which is why it
+builds the Docker command as an argv list and never goes through a shell.
 
 ## Known limits
 
